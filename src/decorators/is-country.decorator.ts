@@ -1,9 +1,36 @@
 import {
   registerDecorator,
-  type ValidationOptions,
-  type ValidationArguments,
+  ValidationOptions,
+  ValidationArguments,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
 } from 'class-validator';
-import axios from 'axios';
+import { Injectable } from '@nestjs/common';
+import { MongoClient } from 'mongodb';
+
+@ValidatorConstraint({ name: 'isCountry', async: true })
+@Injectable()
+export class IsCountryConstraint implements ValidatorConstraintInterface {
+  async validate(value: string) {
+    const client = new MongoClient('mongodb://localhost:27017');
+    try {
+      await client.connect();
+      const database = client.db('country-votes');
+      const collection = database.collection('countries');
+      const country = await collection.findOne({ name: value });
+      return !!country;
+    } catch (error) {
+      console.error('Error validating country:', error);
+      return false;
+    } finally {
+      await client.close();
+    }
+  }
+
+  defaultMessage(args: ValidationArguments) {
+    return `${args.property} must be a valid country`;
+  }
+}
 
 export function IsCountry(validationOptions?: ValidationOptions) {
   return function (object: any, propertyName: string) {
@@ -12,18 +39,8 @@ export function IsCountry(validationOptions?: ValidationOptions) {
       target: object.constructor,
       propertyName,
       options: validationOptions,
-      validator: {
-        async validate(value: string) {
-          try {
-            return await axios.get(
-              `https://restcountries.com/v3.1/name/${value}`,
-            );
-          } catch (error) {}
-        },
-        defaultMessage(args: ValidationArguments) {
-          return `${args.property} must be a valid country`;
-        },
-      },
+      constraints: [],
+      validator: IsCountryConstraint,
     });
   };
 }

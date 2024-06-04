@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './users.model';
@@ -18,7 +18,7 @@ export class UsersService {
     const existingUser = await this.userModel.findOne({ email });
 
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      throw new BadRequestException('User with this email already exists');
     }
 
     const newUser = await this.userModel.create({ name, email, country });
