@@ -8,7 +8,7 @@ import { CountryService } from '../country/country.service';
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel('User') private userModel: Model<UserDocument>,
     private readonly countryService: CountryService,
   ) {}
 
@@ -22,12 +22,13 @@ export class UsersService {
     }
 
     const newUser = await this.userModel.create({ name, email, country });
+
     await this.countryService.voteCountry(country);
 
     return newUser;
   }
 
   async getAll(): Promise<User[]> {
-    return this.userModel.find().lean();
+    return this.userModel.find().lean().exec();
   }
 }
